@@ -11,7 +11,9 @@ class Pantry < Formula
   depends_on "python@3.12"
 
   def install
-    venv = virtualenv_create(libexec, "python3.12")
+    virtualenv_create(libexec, "python3.12")
+    python = formula_opt_bin("python@3.12")/"python3.12"
+
     deps = [
       "fastapi",
       "uvicorn[standard]",
@@ -21,13 +23,29 @@ class Pantry < Formula
       "huggingface_hub",
       "rumps",
     ]
-    venv.pip_install deps
 
+    # Install core dependencies into virtualenv without Homebrew's --no-binary=:all:
+    system python, "-m", "pip", "--python=#{libexec}/bin/python", "install", *deps
+
+    # Install Apple Silicon MLX extras (only available as pre-built wheels on PyPI)
     if Hardware::CPU.arm?
-      venv.pip_install ["mlx", "mlx-lm"]
+      mlx_deps = if MacOS.version <= :ventura
+        ["mlx<=0.29.3", "mlx-lm<=0.30.2"]
+      else
+        ["mlx", "mlx-lm"]
+      end
+      begin
+        system python, "-m", "pip", "--python=#{libexec}/bin/python", "install", *mlx_deps
+      rescue BuildError => e
+        opoo "MLX could not be installed automatically: #{e.message}"
+      end
     end
 
-    venv.pip_install_and_link buildpath
+    # Install pantry package into the virtualenv
+    system python, "-m", "pip", "--python=#{libexec}/bin/python", "install", "--no-deps", buildpath
+
+    # Symlink the pantry command to bin
+    bin.install_symlink libexec/"bin/pantry"
   end
 
   def post_install
@@ -51,7 +69,7 @@ class Pantry < Formula
       Use `pantry serve --no-menubar` for HTTP only.
 
       On Intel Macs, install MLX extras yourself if needed:
-        #{Formula["python@3.12"].opt_bin}/python3.12 -m pip install --prefix=#{libexec} mlx mlx-lm
+        #{formula_opt_bin("python@3.12")}/python3.12 -m pip --python=#{libexec}/bin/python install mlx mlx-lm
     EOS
   end
 
