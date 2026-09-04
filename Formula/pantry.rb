@@ -37,6 +37,16 @@ class Pantry < Formula
     })
   end
 
+  def post_install
+    # Re-sign installed native C-extensions and dylibs with native Apple codesign
+    # to prevent 'Namespace CODESIGNING, Code 2, Invalid Page' errors on Apple Silicon.
+    if Hardware::CPU.arm?
+      Dir["#{libexec}/**/*.{so,dylib}"].each do |lib|
+        system "codesign", "--force", "--sign", "-", lib
+      end
+    end
+  end
+
   def caveats
     <<~EOS
       Initialize and run:
