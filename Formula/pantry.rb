@@ -3,8 +3,8 @@ class Pantry < Formula
 
   desc "Local Apple Silicon model host with capability resolve"
   homepage "https://github.com/vdplabs/pantry"
-  url "https://github.com/vdplabs/pantry/archive/refs/tags/v0.5.0.tar.gz"
-  sha256 "1d6abdaab89ed968c5cb39c5be1cd9e567af40b2d635ac9adc5aa20c478ca932"
+  url "https://github.com/vdplabs/pantry/archive/refs/tags/v0.5.1.tar.gz"
+  sha256 "e292a2a623331488797b404d6b32103af226cb2e5aef384c377c4fd0721a6779"
   license "MIT"
   head "https://github.com/vdplabs/pantry.git", branch: "main"
 
