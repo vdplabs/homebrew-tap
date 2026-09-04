@@ -1,19 +1,17 @@
 class Pantry < Formula
+  include Language::Python::Virtualenv
+
   desc "Local Apple Silicon model host with capability resolve"
   homepage "https://github.com/vdplabs/pantry"
-  url "https://github.com/vdplabs/pantry/archive/refs/tags/v0.4.0.tar.gz"
-  sha256 "7882720175711992ad9e0b706eeb2a7f97e1c5317d2aaa3c9cf24b1b5271eb34"
+  url "https://github.com/vdplabs/pantry/archive/refs/tags/v0.4.1.tar.gz"
+  sha256 "1a639ab06f5b4fdc5e13ff1c5c3a9eee6000150e16ebf611adddde5742496a6f"
   license "MIT"
   head "https://github.com/vdplabs/pantry.git", branch: "main"
 
   depends_on "python@3.12"
 
   def install
-    python = Formula["python@3.12"].opt_bin/"python3.12"
-    ENV["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
-    py_ver = Language::Python.major_minor_version python
-
-    # Core API deps + menu bar (rumps). MLX is Apple Silicon–heavy; install on arm.
+    venv = virtualenv_create(libexec, "python3.12")
     deps = [
       "fastapi",
       "uvicorn[standard]",
@@ -23,18 +21,13 @@ class Pantry < Formula
       "huggingface_hub",
       "rumps",
     ]
-    system python, "-m", "pip", "install", "--prefix=#{libexec}", *deps
+    venv.pip_install deps
 
     if Hardware::CPU.arm?
-      system python, "-m", "pip", "install", "--prefix=#{libexec}", "mlx", "mlx-lm"
+      venv.pip_install ["mlx", "mlx-lm"]
     end
 
-    system python, "-m", "pip", "install", "--prefix=#{libexec}", "."
-    bin.install Dir[libexec/"bin/pantry"]
-    bin.env_script_all_files(libexec/"bin", {
-      PATH:       "#{libexec}/bin:$PATH",
-      PYTHONPATH: "#{libexec}/lib/python#{py_ver}/site-packages",
-    })
+    venv.pip_install_and_link buildpath
   end
 
   def post_install
